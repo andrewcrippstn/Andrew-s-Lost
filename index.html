@@ -58,12 +58,13 @@ kbd{font:11px ui-monospace,monospace;border:1px solid var(--bd);border-radius:4p
 .row .ri{color:var(--mu);flex:none;display:flex}.row .rt{flex:1;min-width:0}
 .row b,.row small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row small{color:var(--mu)}
 .tag{font-size:.72em;border:1px solid var(--bd);border-radius:99px;padding:1px 8px;color:var(--mu);flex:none}.tag.w{color:var(--wn);border-color:var(--wn)}
+textarea{resize:vertical}
 input,select,textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);padding:calc(var(--pad)*.7) var(--pad);min-width:0;width:100%}
 input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:18px;height:18px}
 .fld{display:flex;flex-direction:column;gap:3px;font-size:.85em;color:var(--mu)}.fld input{font-size:1rem}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g2 .w{grid-column:1/-1}
 .err{color:var(--er);font-size:.85em;min-height:1em}.hint{color:var(--mu);font-size:.88em;margin:0}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92em}.kv dt{color:var(--mu)}.kv dd{margin:0;word-break:break-word}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92em}.kv dt{color:var(--mu)}.kv dd{margin:0;word-break:break-word;white-space:pre-wrap}
 .seg{display:inline-flex;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;flex:none}
 .seg button{border:0;background:transparent;padding:5px 11px;cursor:pointer}.seg button+button{border-left:1px solid var(--bd)}
 .seg button[aria-pressed=true]{background:var(--ac);color:var(--oa)}
@@ -78,6 +79,7 @@ input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:
 .room{position:absolute}
 .room.hl{background:color-mix(in srgb,var(--hl) 35%,transparent);border:calc(3px*var(--iz)) solid var(--hl);box-shadow:0 0 0 calc(2px*var(--iz)) #fff8}
 .room.adm{border:calc(2px*var(--iz)) dashed var(--ac);background:color-mix(in srgb,var(--ac) 15%,transparent);pointer-events:auto;cursor:move}
+.room.nm{border:calc(2px*var(--iz)) solid var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 .room.sel{border-style:solid;border-color:var(--hl);background:color-mix(in srgb,var(--hl) 30%,transparent)}
 .room span{position:absolute;left:0;bottom:100%;white-space:nowrap;background:#1d2330;color:#fff;font-size:calc(13px*var(--iz));padding:calc(2px*var(--iz)) calc(7px*var(--iz));border-radius:calc(4px*var(--iz));font-weight:600}
 .hd{position:absolute;width:calc(14px*var(--iz));height:calc(14px*var(--iz));background:var(--hl);border:calc(2px*var(--iz)) solid #fff;border-radius:50%;pointer-events:auto}
@@ -220,7 +222,7 @@ const TH=[...Object.entries(FAM).flatMap(([f,s])=>s.split(',').map(x=>{const[n,h
 const ACC=[['Blue','#3b82f6'],['Indigo','#6366f1'],['Violet','#8b5cf6'],['Purple','#a855f7'],['Magenta','#d946ef'],['Pink','#ec4899'],['Rose','#f43f5e'],['Red','#ef4444'],['Coral','#ff6f59'],['Orange','#f97316'],['Amber','#f59e0b'],['Gold','#eab308'],['Yellow','#facc15'],['Lime','#84cc16'],['Green','#22c55e'],['Emerald','#10b981'],['Teal','#14b8a6'],['Cyan','#06b6d4'],['Sky','#0ea5e9'],['Navy','#1e40af'],['Slate','#64748b'],['Graphite','#475569'],['Brown','#92400e'],['Copper','#b45309']];
 
 /* ---------- Settings (one service, localStorage) ---------- */
-const DEF={theme:'ocean',mode:'system',accent:null,density:'comfortable',radius:'subtle',text:'default',motion:'system',people:true,sr:true,sp:true,custom:[],recent:[],railPin:false,view:'stack',fz:'fixed',fzv:300};
+const DEF={theme:'ocean',mode:'system',accent:null,density:'comfortable',radius:'subtle',text:'default',motion:'system',people:true,sr:true,sp:true,custom:[],recent:[],railPin:false,nameRooms:false,namePeople:false,view:'stack',fz:'fixed',fzv:300};
 let S={...DEF};try{S={...DEF,...JSON.parse(localStorage.getItem('mrf-settings')||'{}')}}catch(e){}
 const saveS=()=>{try{localStorage.setItem('mrf-settings',JSON.stringify(S))}catch(e){}};
 const allTh=()=>[...TH,...S.custom.map(c=>({...c,f:'Custom'}))];
@@ -305,12 +307,12 @@ let lastV=[0,0];new ResizeObserver(()=>{const[vw,vh]=vsize();if(pdf&&lastV[0]){t
 const pc=v=>(v*100)+'%';
 function drawOverlay(){
   const by={},add=(n,h)=>by[n]=(by[n]||'')+h,eR=mode==='rooms';
-  if(mode!=='people')for(const r of rooms){if(tops[r.page]===undefined)continue;const h1=hl.has('r:'+r.id);if(!h1&&!eR)continue;
-    add(r.page,`<div class="room${h1?' hl':''}${eR?' adm':''}${eR&&isSel('room',r.id)?' sel':''}" data-id="${esc(r.id)}" style="left:${pc(r.x)};top:${pc(r.y)};width:${pc(r.width)};height:${pc(r.height)}"><span>${esc(r.name)}</span>`+
+  if(mode!=='people')for(const r of rooms){if(tops[r.page]===undefined)continue;const h1=hl.has('r:'+r.id);if(!h1&&!eR&&!S.nameRooms)continue;
+    add(r.page,`<div class="room${h1?' hl':''}${!h1&&!eR?' nm':''}${eR?' adm':''}${eR&&isSel('room',r.id)?' sel':''}" data-id="${esc(r.id)}" style="left:${pc(r.x)};top:${pc(r.y)};width:${pc(r.width)};height:${pc(r.height)}"><span>${esc(r.name)}</span>`+
       (eR&&isSel('room',r.id)?['nw','ne','sw','se'].map(k=>`<i class="hd" data-h="${k}"></i>`).join(''):'')+'</div>')}
   if(mode!=='rooms')for(const p of people){if(p.x==null||tops[p.page]===undefined)continue;const h1=hl.has('p:'+p.id),s1=isSel('person',p.id);
-    if(!S.people&&!h1&&!s1&&mode!=='people')continue;
-    add(p.page,`<div class="pin${h1?' hl':''}${s1?' sel':''}" data-id="${esc(p.id)}" style="left:${pc(p.x)};top:${pc(p.y)}" title="${esc(p.name)}"><b>${esc(initials(p.name))}</b>${h1||s1?`<span>${esc(p.name)}</span>`:''}</div>`)}
+    if(!S.people&&!S.namePeople&&!h1&&!s1&&mode!=='people')continue;
+    add(p.page,`<div class="pin${h1?' hl':''}${s1?' sel':''}" data-id="${esc(p.id)}" style="left:${pc(p.x)};top:${pc(p.y)}" title="${esc(p.name)}"><b>${esc(initials(p.name))}</b>${h1||s1||S.namePeople?`<span>${esc(p.name)}</span>`:''}</div>`)}
   if(draft)add(draft.p,`<div id="draft" style="left:${pc(draft.x)};top:${pc(draft.y)};width:${pc(draft.w)};height:${pc(draft.h)}"></div>`);
   stage.querySelectorAll('.pg').forEach(d=>d.querySelector('.ov').innerHTML=by[d.dataset.p]||'')
 }
@@ -350,7 +352,7 @@ viewer.addEventListener('pointermove',e=>{
 function endPtr(e){
   ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
   if(drag&&drag.t==='draw'){const d=draft;draft=null;
-    if(d&&d.w>.005&&d.h>.005){const rid=nextId(rooms,'MR'),r={id:rid,name:'New room '+parseInt(rid.slice(2)),floor:'',page:d.p,x:d.x,y:d.y,width:d.w,height:d.h,capacity:'',equipment:[]};
+    if(d&&d.w>.005&&d.h>.005){const rid=nextId(rooms,'MR'),r={id:rid,name:'New room '+parseInt(rid.slice(2)),floor:'',page:d.p,x:d.x,y:d.y,width:d.w,height:d.h,notes:''};
       rooms.push(r);saveRooms();tool=null;select('room',r.id,false);setTimeout(()=>$('#insp [data-f=name]')?.select(),0)}else{drawOverlay()}}
   else if(drag&&(drag.t==='move'||drag.t==='resize')){saveRooms();renderInsp()}
   else if(drag&&drag.t==='pin'){savePeople();renderInsp();renderList()}
@@ -371,7 +373,7 @@ $('#sPrev').onclick=()=>showPage(page-1,true);$('#sNext').onclick=()=>showPage(p
 function score(q,f){const t=q.toLowerCase().split(/\s+/).filter(Boolean);if(!t.length)return 1;const[a,...rest]=f.map(x=>String(x||'').toLowerCase());let tot=0;
   for(const w of t){let s=0;if(a===w)s=100;else if(a.startsWith(w))s=80;else if(a.split(/[\s\-_.]+/).some(x=>x.startsWith(w)))s=65;else if(a.includes(w))s=50;else if((rest[0]||'').includes(w))s=30;else if(rest.join(' ').includes(w))s=15;else return 0;tot+=s}return tot/t.length}
 function search(q,scope){const out=[],wr=scope==='room'||scope==='both'||(scope==='all'&&S.sr),wp=scope==='person'||scope==='both'||(scope==='all'&&S.sp);
-  if(wr)for(const o of rooms){const s=score(q,[o.name,o.id+' '+o.floor,(o.equipment||[]).join(' ')]);if(s)out.push({k:'room',o,s})}
+  if(wr)for(const o of rooms){const s=score(q,[o.name,o.notes||'',o.id]);if(s)out.push({k:'room',o,s})}
   if(wp)for(const o of people){const s=score(q,[o.name,[o.role,o.team,o.contact].join(' '),o.id]);if(s)out.push({k:'person',o,s})}
   return out.sort((a,b)=>b.s-a.s||a.o.name.localeCompare(b.o.name))}
 
@@ -399,7 +401,7 @@ function renderPanel(){
   else h=`<div class="ph"><h2>Data</h2><p>Floor plan, import and export. Everything is stored on this device.</p></div><div class="pb"><label class="btn pri">Load floor plan PDF</label><div class="chips"><button class="btn" data-a="imp">Import…</button><button class="btn" data-a="exp">Export…</button></div><dl class="kv"><dt>PDF</dt><dd>${pdf?numPages+' pages · '+(pdfSize/1048576).toFixed(1)+' MB':'None loaded'}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length} (${people.filter(p=>p.x!=null).length} placed)</dd></dl><p class="hint">Use Export regularly to keep a backup of your rooms and people.</p></div>`;
   el.innerHTML=h;if(mode==='data')el.querySelector('label.btn').htmlFor='pdfIn';renderList();
 }
-const roomRow=r=>`<div class="row${isSel('room',r.id)?' act':''}" tabindex="0" role="button" data-k="room" data-id="${esc(r.id)}"><span class="ri">${ic('room')}</span><span class="rt"><b>${esc(r.name)}</b><small>${esc([r.id,r.floor,'page '+r.page,r.capacity?r.capacity+' seats':''].filter(Boolean).join(' · '))}</small></span></div>`;
+const roomRow=r=>`<div class="row${isSel('room',r.id)?' act':''}" tabindex="0" role="button" data-k="room" data-id="${esc(r.id)}"><span class="ri">${ic('room')}</span><span class="rt"><b>${esc(r.name)}</b><small>${esc((r.notes||'').split('\n')[0]||'Room')}</small></span></div>`;
 const personRow=p=>`<div class="row${isSel('person',p.id)?' act':''}" tabindex="0" role="button" data-k="person" data-id="${esc(p.id)}"><span class="ri">${ic('user')}</span><span class="rt"><b>${esc(p.name)}</b><small>${esc([p.role,p.team].filter(Boolean).join(' · ')||p.id)}</small></span>${p.x==null?'<span class="tag w">Not placed</span>':''}</div>`;
 function renderList(){const el=$('#plist');if(!el)return;let h='';
   if(mode==='find'){const res=search('','both'),R=res.filter(x=>x.k==='room'),P=res.filter(x=>x.k==='person');
@@ -424,21 +426,19 @@ function renderInsp(){
   const el=$('#insp'),o=obj(sel);let h=`<div class="ph"><div style="display:flex;justify-content:space-between;align-items:center"><h2>${o?(sel.k==='room'?'Room':'Person'):'Details'}</h2><button class="btn ghost ib" data-a="close" aria-label="Close details">${ic('x')}</button></div>`;
   if(!o)h+=`<p>Select a room or person to see its details.</p></div><div class="pb"><dl class="kv">${kv('Rooms',rooms.length)}${kv('People',people.length)}${kv('Pages',numPages||'–')}</dl></div>`;
   else if(!isEd()){
-    h+=`<p>${esc(o.name)}</p></div><div class="pb"><dl class="kv">`+(sel.k==='room'?kv('ID',o.id)+kv('Floor',o.floor)+kv('Page',o.page)+kv('Capacity',o.capacity)+kv('Equipment',(o.equipment||[]).join(', ')):kv('Role',o.role)+kv('Team',o.team)+kv('Contact',o.contact)+kv('Seat',o.x==null?'Not placed yet':'Page '+o.page))+`</dl><button class="btn pri" data-a="show">${ic('pin')} Show on map</button></div>`}
-  else if(sel.k==='room')h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}${fld('ID','id',o.id)}${fld('Floor','floor',o.floor)}${fld('PDF page (1-based)','page',o.page,'number')}${fld('Capacity','capacity',o.capacity,'number')}${fld('Equipment (comma separated)','equipment',(o.equipment||[]).join(', '),'text','w')}</div><div class="err" id="ierr" role="alert"></div><p class="hint">Drag the box to move it; drag a corner dot to resize.</p><div class="chips"><button class="btn" data-a="show">Locate</button><button class="btn dng" data-a="del">Delete</button></div></div>`;
+    h+=`<p>${esc(o.name)}</p></div><div class="pb"><dl class="kv">`+(sel.k==='room'?kv('Notes',o.notes):kv('Role',o.role)+kv('Team',o.team)+kv('Contact',o.contact)+kv('Seat',o.x==null?'Not placed yet':'Page '+o.page))+`</dl><button class="btn pri" data-a="show">${ic('pin')} Show on map</button></div>`}
+  else if(sel.k==='room')h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}<label class="fld w">Notes<textarea data-f="notes" rows="6">${esc(o.notes||'')}</textarea></label></div><div class="err" id="ierr" role="alert"></div><p class="hint">Drag the box to move it; drag a corner dot to resize.</p><div class="chips"><button class="btn" data-a="show">Locate</button><button class="btn dng" data-a="del">Delete</button></div></div>`;
   else h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}${fld('Role','role',o.role)}${fld('Team','team',o.team)}${fld('Contact','contact',o.contact,'text','w')}${fld('ID','id',o.id)}${fld('Page','page',o.page,'number')}</div><div class="err" id="ierr" role="alert"></div>
    <div class="gh">Seat on the plan</div><p class="hint">${o.x==null?'Not placed yet.':'Placed on page '+o.page+'. Drag the marker to adjust.'}</p>
    <button class="btn pri" data-a="place">${ic('pin')} ${o.x==null?'Place on map':'Move to a new spot'}</button><div class="chips">${o.x!=null?'<button class="btn" data-a="show">Locate</button><button class="btn" data-a="unplace">Unplace</button>':''}<button class="btn dng" data-a="del">Delete</button></div></div>`;
   el.innerHTML=h;
 }
 $('#insp').addEventListener('change',e=>{
-  const f=e.target.dataset.f;if(!f||!sel)return;const o=obj(sel),v=e.target.value.trim(),err=$('#ierr');
+  const f=e.target.dataset.f;if(!f||!sel)return;const o=obj(sel),v=f==='notes'?e.target.value.replace(/\s+$/,''):e.target.value.trim(),err=$('#ierr');
   if(f==='id'||f==='name'){const dup=f==='id'&&(sel.k==='room'?rooms:people).some(x=>x!==o&&x.id===v);if(!v||dup){err.textContent=f==='id'?'That ID is empty or already used.':'A name is required.';e.target.value=o[f];return}
     if(f==='id'){hl.delete(key(sel.k,o.id));sel.id=v}o[f]=v}
   else if(f==='page')o.page=clamp(parseInt(v)||1,1,numPages||999);
-  else if(f==='capacity')o.capacity=v===''?'':Number(v);
-  else if(f==='equipment')o.equipment=v.split(',').map(s=>s.trim()).filter(Boolean);
-  else o[f]=v;
+    else o[f]=v;
   err.textContent='';sel.k==='room'?saveRooms():savePeople();renderList();drawOverlay();renderStatus();
   if(f==='page'&&o.page!==page&&(sel.k==='room'||o.x!=null))showPage(o.page,true);
 });
@@ -484,7 +484,7 @@ function renderPal(){
   else{S.recent.forEach(k=>{const o=(k[0]==='r'?rooms:people).find(x=>x.id===k.slice(2));if(o)it.push({g:'Recent',k:k[0]==='r'?'room':'person',o})});if(sc==='all')CMDS().forEach(c=>it.push({g:'Actions',c}))}
   it=it.slice(0,60);P.items=it;P.i=0;let h='',g='';
   it.forEach((x,i)=>{if(x.g!==g){g=x.g;h+=`<div class="gh" role="presentation">${g}</div>`}
-    const main=x.c?x.c.n:x.o.name,sub=x.c?'':x.k==='room'?[x.o.id,x.o.floor,'page '+x.o.page,x.o.capacity?x.o.capacity+' seats':''].filter(Boolean).join(' · '):[x.o.role,x.o.team].filter(Boolean).join(' · ')||x.o.id;
+    const main=x.c?x.c.n:x.o.name,sub=x.c?'':x.k==='room'?(x.o.notes||'').split('\n')[0]:[x.o.role,x.o.team].filter(Boolean).join(' · ')||x.o.id;
     const tag=x.c?'Action':x.k==='room'?'Room':x.o.x==null?'Not placed':'Person';
     h+=`<div class="row" role="option" id="po${i}" data-i="${i}" aria-selected="false"><span class="ri">${ic(x.c?'cmd':x.k==='room'?'room':'user')}</span><span class="rt"><b>${esc(main)}</b>${sub?`<small>${esc(sub)}</small>`:''}</span><span class="tag${tag==='Not placed'?' w':''}">${tag}</span></div>`});
   $('#pl').innerHTML=h||`<p class="hint" style="padding:12px">${q?'No matches for “'+esc(q)+'”. Try a room number, a name, or a different scope.':'Nothing to search yet. Use Rooms and People in the left menu to add some.'}</p>`;
@@ -533,7 +533,7 @@ function renderSet(){
       return `<div class="g2"><label class="fld w">Name<input data-cb="n" value="${esc(cb.n)}"></label></div><div class="sw">${f('Background','bg')}${f('Surface','s1')}${f('Border','bd')}${f('Text','tx')}${f('Accent','ac')}</div><div id="cbp"></div><div class="err" id="cbw"></div><div class="chips"><button class="btn pri" data-act="saveCustom">Save as new theme</button></div>`+
         (cu.length?`<div class="gh">Your themes</div>`+cu.map(c=>`<div class="srow"><span>${esc(c.n)}</span><button class="btn dng" data-act="delCustom" data-id="${c.id}">Delete</button></div>`).join(''):'')})()}
   else if(setCat==='plan')h=`<h3>Floor plan</h3><p class="hint">How pages are shown, and where the view goes when you open a room or person.</p>`+srow('Page layout','Stacked pages scroll as one long plan.',seg('view',[['stack','Stacked vertically'],['single','One page at a time']]))+srow('Zoom when jumping to a room or person','Applies when you pick a search result or click an item in a list.',seg('fz',[['fit','Fit the item'],['fixed','Fixed zoom']]))+(S.fz==='fixed'?srow('Zoom level','Percent of the “fit page” zoom shown in the status bar.',`<div style="display:flex;gap:10px;align-items:center;width:240px"><input type="range" min="100" max="800" step="25" value="${S.fzv}" data-range="fzv" aria-label="Zoom level"><span id="fzl">${S.fzv}%</span></div>`):'');
-  else if(setCat==='search')h=`<h3>Search & map</h3><p class="hint">Control what global search (Ctrl K) covers and what the plan shows.</p>`+tog('people','Show people on the map','Display seat markers for everyone who has been placed.')+tog('sr','Search rooms','Include rooms in global search.')+tog('sp','Search people','Include people in global search.')+srow('Recent searches',S.recent.length+' saved on this device','<button class="btn" data-act="clearRecent">Clear</button>');
+  else if(setCat==='search')h=`<h3>Search & map</h3><p class="hint">Control what global search (Ctrl K) covers and what the plan shows.</p>`+tog('people','Show people on the map','Display seat markers for everyone who has been placed.')+tog('nameRooms','Always show room names','Outline every room on the plan with its name, not just search results.')+tog('namePeople','Always show people’s names','Keep every person’s name visible beside their marker.')+tog('sr','Search rooms','Include rooms in global search.')+tog('sp','Search people','Include people in global search.')+srow('Recent searches',S.recent.length+' saved on this device','<button class="btn" data-act="clearRecent">Clear</button>');
   else if(setCat==='data')h=`<h3>Data & storage</h3><p class="hint">Rooms, people and the PDF are stored in this browser only.</p><dl class="kv"><dt>PDF</dt><dd>${pdf?numPages+' pages · '+(pdfSize/1048576).toFixed(1)+' MB':'None'}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length}</dd></dl><div class="chips"><button class="btn" data-act="exp">Export…</button><button class="btn" data-act="imp">Import…</button></div><div class="gh">Danger zone</div>`+srow('Delete all rooms and people','Cannot be undone. Export first.','<button class="btn dng" data-act="wipe">Delete</button>')+srow('Reset settings','Restore the default theme and preferences.','<button class="btn dng" data-act="resetS">Reset</button>');
   else h=`<h3>About & shortcuts</h3><p class="hint">Andrew’s Lost · version 2. Page numbers are 1-based; positions are stored as 0–1 fractions of each page.</p><dl class="kv"><dt><kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>/</kbd></dt><dd>Open search</dd><dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt><dd>Move and open a result</dd><dt><kbd>Shift</kbd> <kbd>Enter</kbd></dt><dd>Highlight every result</dd><dt><kbd>Ctrl</kbd> <kbd>,</kbd></dt><dd>Settings</dd><dt><kbd>Esc</kbd></dt><dd>Close search or cancel placing/drawing</dd></dl>`;
   sc.innerHTML=h;sc.scrollTop=top;if(setCat==='appearance'){fillGal();cbPrev()}
@@ -574,8 +574,7 @@ function csvParse(t){const rows=[];let row=[],f='',q=false;
   row.push(f);if(row.some(x=>x.trim()))rows.push(row);const hd=(rows.shift()||[]).map(h=>h.trim().toLowerCase());
   return rows.map(r=>Object.fromEntries(hd.map((h,i)=>[h,(r[i]||'').trim()])))}
 const num=v=>v===''||v==null?NaN:Number(v);
-function normRoom(o){const r={id:String(o.id||'').trim(),name:String(o.name||'').trim(),floor:o.floor||'',page:Math.max(1,parseInt(o.page)||1),x:num(o.x),y:num(o.y),width:num(o.width),height:num(o.height),capacity:o.capacity===''||o.capacity==null?'':Number(o.capacity),
-  equipment:Array.isArray(o.equipment)?o.equipment:String(o.equipment||'').split(/[;|]/).map(s=>s.trim()).filter(Boolean)};
+function normRoom(o){const r={id:String(o.id||'').trim(),name:String(o.name||'').trim(),page:Math.max(1,parseInt(o.page)||1),x:num(o.x),y:num(o.y),width:num(o.width),height:num(o.height),notes:String(o.notes||'').trim()};
   if(!r.name||[r.x,r.y,r.width,r.height].some(isNaN))return null;for(const k of['x','y','width','height'])r[k]=clamp(r[k],0,1);return r}
 function normPerson(o){const p={id:String(o.id||'').trim(),name:String(o.name||'').trim(),role:o.role||'',team:o.team||'',contact:o.contact||'',page:Math.max(1,parseInt(o.page)||1),x:num(o.x),y:num(o.y)};
   if(!p.name)return null;if(isNaN(p.x)||isNaN(p.y)){p.x=null;p.y=null}else{p.x=clamp(p.x,0,1);p.y=clamp(p.y,0,1)}return p}
@@ -588,7 +587,7 @@ function doImport(text){let rl=[],pl=[];text=text.trim();
 function openIo(m){ioMode=m;$('#ioMsg').textContent='';const T={exp:'Export configuration (JSON)',imp:'Import rooms and people (JSON or CSV)',bulk:'Add several people'}[m];$('#ioT').textContent=T;
   $('#ioGo').textContent={exp:'Download',imp:'Import',bulk:'Add people'}[m];$('#ioCp').hidden=m!=='exp';$('#ioFL').hidden=m==='exp';
   $('#ioTa').value=m==='exp'?JSON.stringify({version:2,pageNumbering:'1-based',rooms,people},null,2):'';
-  $('#ioTa').placeholder=m==='imp'?'Paste JSON, or CSV. Rooms: id,name,floor,page,x,y,width,height,capacity,equipment. People: id,name,role,team,contact,page,x,y':m==='bulk'?'One person per line:\nName, Role, Team\nJane Citizen, Engineer, Network':'';
+  $('#ioTa').placeholder=m==='imp'?'Paste JSON, or CSV. Rooms: id,name,page,x,y,width,height,notes. People: id,name,role,team,contact,page,x,y':m==='bulk'?'One person per line:\nName, Role, Team\nJane Citizen, Engineer, Network':'';
   if(!$('#io').open)$('#io').showModal()}
 $('#ioX').onclick=()=>$('#io').close();
 $('#ioF').onchange=async e=>{const f=e.target.files[0];if(f){$('#ioTa').value=await f.text();$('#ioMsg').textContent='File loaded. Press Import.'}e.target.value=''};
