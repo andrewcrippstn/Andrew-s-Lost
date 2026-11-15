@@ -70,6 +70,9 @@ input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:
 .seg button[aria-pressed=true]{background:var(--ac);color:var(--oa)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--bd);background:transparent;border-radius:99px;padding:3px 11px;cursor:pointer;font-size:.85em}
 .chip[aria-pressed=true]{background:var(--acs);border-color:var(--ac);color:var(--ac)}
+.doc{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r);background:var(--bg)}
+.doc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.doc small{color:var(--mu)}
+.doc .chips{flex-wrap:nowrap;align-items:center}.doc .chips .btn{padding:3px 9px}
 #ws{position:relative;min-width:0;min-height:0;overflow:hidden}
 #viewer{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--bg) 85%,var(--tx)) 0%,var(--bg) 62%)}
 #viewer.draw{cursor:crosshair}
@@ -82,6 +85,7 @@ input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:
 .room.nm{border:calc(2px*var(--iz)) solid var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 .room.sel{border-style:solid;border-color:var(--hl);background:color-mix(in srgb,var(--hl) 30%,transparent)}
 .room span{position:absolute;left:0;bottom:100%;white-space:nowrap;background:#1d2330;color:#fff;font-size:calc(13px*var(--iz));padding:calc(2px*var(--iz)) calc(7px*var(--iz));border-radius:calc(4px*var(--iz));font-weight:600}
+.room span,.pin span{translate:calc(var(--dx,0)*var(--iz)*1px) calc(var(--dy,0)*var(--iz)*1px)}
 .hd{position:absolute;width:calc(14px*var(--iz));height:calc(14px*var(--iz));background:var(--hl);border:calc(2px*var(--iz)) solid #fff;border-radius:50%;pointer-events:auto}
 .hd[data-h=nw]{left:calc(-7px*var(--iz));top:calc(-7px*var(--iz));cursor:nwse-resize}.hd[data-h=ne]{right:calc(-7px*var(--iz));top:calc(-7px*var(--iz));cursor:nesw-resize}
 .hd[data-h=sw]{left:calc(-7px*var(--iz));bottom:calc(-7px*var(--iz));cursor:nesw-resize}.hd[data-h=se]{right:calc(-7px*var(--iz));bottom:calc(-7px*var(--iz));cursor:nwse-resize}
@@ -92,6 +96,7 @@ input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:
 #empty{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;color:var(--mu);padding:20px}
 #status{display:flex;align-items:center;gap:12px;padding:0 10px;background:var(--s1);border-top:1px solid var(--bd);font-size:.85em;color:var(--mu);z-index:30;white-space:nowrap;overflow:hidden}
 #status .tn{font-variant-numeric:tabular-nums}#sSel{overflow:hidden;text-overflow:ellipsis}
+#sDoc{max-width:200px;overflow:hidden;text-overflow:ellipsis;color:var(--tx)}
 #status .btn{padding:2px 8px;font-size:1em}.pill{padding:2px 9px;border-radius:6px;background:var(--s2);border:1px solid var(--bd);color:var(--tx);font-weight:600}.grp{display:flex;align-items:center;gap:2px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:1px 3px}.dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
 #menu{position:fixed;z-index:50;min-width:230px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 10px 30px #0006;padding:4px}
 #menu button{display:flex;width:100%;justify-content:space-between;gap:20px;border:0;background:transparent;padding:7px 10px;border-radius:calc(var(--r)*.7);cursor:pointer;text-align:left}#menu button:hover{background:var(--hv)}
@@ -148,11 +153,11 @@ dialog[open]{display:flex;flex-direction:column}
 <aside id="panel" aria-label="Tools"></aside>
 <main id="ws">
   <div id="viewer"><div id="stage"></div></div>
-  <div id="empty"><b>No floor plan loaded</b><span>Load a multi-page PDF of your office floor plans.</span><label class="btn pri" id="emptyBtn">Load floor plan PDF</label></div>
+  <div id="empty"><b>No floor plans loaded</b><span>Load one or more PDFs of your office floor plans.</span><label class="btn pri" id="emptyBtn">Load floor plan PDFs</label></div>
 </main>
 <aside id="insp" aria-label="Details"></aside>
 <footer id="status">
-  <span class="dot"></span><span class="pill" id="sMode"></span><span id="sSel" class="sp"></span><span id="sCur" class="tn hn"></span>
+  <span class="dot"></span><span class="pill" id="sMode"></span><span id="sSel" class="sp"></span><span id="sCur" class="tn hn"></span><span id="sDoc" class="hn"></span>
   <div class="grp"><button class="btn ghost" id="sPrev" aria-label="Previous page">‹</button><span id="sPg" class="tn"></span><button class="btn ghost" id="sNext" aria-label="Next page">›</button></div>
   <div class="grp"><button class="btn ghost" id="zo" aria-label="Zoom out">−</button><span id="sZ" class="tn"></span><button class="btn ghost" id="zi" aria-label="Zoom in">+</button><button class="btn ghost" id="zf" aria-label="Fit to screen" title="Fit to screen"></button></div>
 </footer>
@@ -175,23 +180,26 @@ dialog[open]{display:flex;flex-direction:column}
   <div class="chips"><label class="btn" id="ioFL">Choose file<input id="ioF" type="file" accept=".json,.csv,text/csv,application/json" hidden></label><button class="btn pri" id="ioGo"></button><button class="btn" id="ioCp">Copy</button></div>
   <p class="hint" id="ioMsg"></p></div></dialog>
 <div id="toast" role="status" hidden></div>
-<input type="file" id="pdfIn" accept="application/pdf" hidden>
+<input type="file" id="pdfIn" accept="application/pdf" multiple hidden>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 'use strict';
 /* ===== Room Finder =====
- * Data (separate from the PDF; relative 0-1 coordinates, origin top-left, PAGE NUMBERS ARE 1-BASED):
+ * Several PDFs can be loaded. They are treated as one continuous run of pages, in the order listed under Data:
+ * PDF 1 pages first, then PDF 2, and so on. PAGE NUMBERS ARE 1-BASED and global across all PDFs.
+ * Reordering or removing a PDF renumbers rooms and people automatically.
  *   room   {id,name,floor,page,x,y,width,height,capacity,equipment[]}
  *   person {id,name,role,team,contact,page,x,y}   (x,y = seat position; null until placed)
- * Storage: IndexedDB "roomfinder" (rooms, people, pdf); localStorage "mrf-settings" (theme and preferences). */
+ * Storage: IndexedDB "roomfinder" (rooms, people, pdfs [{name,buf}]; legacy single "pdf" is migrated); localStorage "mrf-settings". */
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const IC={search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5',pin:'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
 room:'M3 21h18M5 21V4h9v17M14 9h5v12M10 12v.01',people:'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8',
 user:'M20 21v-1a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v1M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',data:'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
-set:'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',plus:'M12 5v14M5 12h14',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',x:'M6 6l12 12M18 6L6 18',cmd:'M5 12h14M13 6l6 6-6 6',tack:'M9 4h6l-1 6 3 3H7l3-3zM12 13v8'};
+set:'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',plus:'M12 5v14M5 12h14',fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',x:'M6 6l12 12M18 6L6 18',cmd:'M5 12h14M13 6l6 6-6 6',tack:'M9 4h6l-1 6 3 3H7l3-3zM12 13v8',
+up:'M6 15l6-6 6 6',down:'M6 9l6 6 6-6'};
 const ic=(n,s=18)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]}"/></svg>`;
 
 /* ---------- Colour helpers ---------- */
@@ -222,7 +230,7 @@ const TH=[...Object.entries(FAM).flatMap(([f,s])=>s.split(',').map(x=>{const[n,h
 const ACC=[['Blue','#3b82f6'],['Indigo','#6366f1'],['Violet','#8b5cf6'],['Purple','#a855f7'],['Magenta','#d946ef'],['Pink','#ec4899'],['Rose','#f43f5e'],['Red','#ef4444'],['Coral','#ff6f59'],['Orange','#f97316'],['Amber','#f59e0b'],['Gold','#eab308'],['Yellow','#facc15'],['Lime','#84cc16'],['Green','#22c55e'],['Emerald','#10b981'],['Teal','#14b8a6'],['Cyan','#06b6d4'],['Sky','#0ea5e9'],['Navy','#1e40af'],['Slate','#64748b'],['Graphite','#475569'],['Brown','#92400e'],['Copper','#b45309']];
 
 /* ---------- Settings (one service, localStorage) ---------- */
-const DEF={theme:'ocean',mode:'system',accent:null,density:'comfortable',radius:'subtle',text:'default',motion:'system',people:true,sr:true,sp:true,custom:[],recent:[],railPin:false,nameRooms:false,namePeople:false,view:'stack',fz:'fixed',fzv:300};
+const DEF={theme:'ocean',mode:'system',accent:null,density:'comfortable',radius:'subtle',text:'default',motion:'system',people:true,sr:true,sp:true,custom:[],recent:[],railPin:false,nameRooms:true,namePeople:false,view:'stack',fz:'fixed',fzv:300};
 let S={...DEF};try{S={...DEF,...JSON.parse(localStorage.getItem('mrf-settings')||'{}')}}catch(e){}
 const saveS=()=>{try{localStorage.setItem('mrf-settings',JSON.stringify(S))}catch(e){}};
 const allTh=()=>[...TH,...S.custom.map(c=>({...c,f:'Custom'}))];
@@ -247,10 +255,12 @@ const Store={db:null,
   get(k){return new Promise(res=>{if(!this.db)return res(null);try{const q=this.db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result??null);q.onerror=()=>res(null)}catch(e){res(null)}})},
   set(k,v){return new Promise(res=>{if(!this.db)return res();try{const t=this.db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>res()}catch(e){res()}})}};
 const saveRooms=()=>Store.set('rooms',rooms.map(({draft,...r})=>r)),savePeople=()=>Store.set('people',people);
+const saveDocs=()=>Store.set('pdfs',docs.map(d=>({name:d.name,buf:d.buf})));
 
 /* ---------- State ---------- */
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-let rooms=[],people=[],pdf=null,pdfSize=0,page=1,numPages=0,hl=new Set(),mode='find',tool=null,placeId=null,chain=false,sel=null,draft=null;
+/* docs: [{name,buf,doc,n,dims}]  pageMap[globalPage-1] = [docIndex, pageWithinDoc]; `pdf` is just a truthy flag when any PDF is loaded */
+let rooms=[],people=[],docs=[],pageMap=[],pdf=null,pdfSize=0,page=1,numPages=0,hl=new Set(),mode='find',tool=null,placeId=null,chain=false,sel=null,draft=null;
 let pOpen=true,iOpen=false,W=1200,H=1600,z=1,tx=0,ty=0,rtask=null,dims=[],tops={};
 const viewer=$('#viewer'),stage=$('#stage');
 const isEd=()=>mode==='rooms'||mode==='people',narrow=()=>innerWidth<=900,key=(k,id)=>(k==='room'?'r:':'p:')+id;
@@ -260,29 +270,60 @@ const initials=n=>n.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toU
 const nextId=(l,p)=>{let n=1;const s=new Set(l.map(r=>r.id));while(s.has(p+String(n).padStart(3,'0')))n++;return p+String(n).padStart(3,'0')};
 let tmr;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tmr);tmr=setTimeout(()=>t.hidden=true,2600)}
 function arm(b,fn){if(b.dataset.armed){fn();return}b.dataset.armed=1;const h=b.innerHTML;b.textContent='Click again to confirm';setTimeout(()=>{delete b.dataset.armed;if(b.isConnected)b.innerHTML=h},3000)}
+const pdfInfo=()=>pdf?`${docs.length} PDF${docs.length>1?'s':''} · ${numPages} page${numPages>1?'s':''} · ${(pdfSize/1048576).toFixed(1)} MB`:'None loaded';
+const docOf=n=>{const m=pageMap[n-1];return m?docs[m[0]]:null};
 
 /* ---------- PDF ---------- */
 const G=24,pTop=n=>tops[n]||0;
 function buildStage(){stage.innerHTML='';tops={};let y=0;
-  (S.view==='single'?[page]:Array.from({length:numPages},(_,i)=>i+1)).forEach(n=>{const h=dims[n-1],d=document.createElement('div');d.className='pg';d.dataset.p=n;d.style.cssText=`top:${y}px;height:${h}px`;d.innerHTML='<canvas></canvas><div class="ov"></div>';stage.appendChild(d);tops[n]=y;y+=h+G});
+  (S.view==='single'?(numPages?[clamp(page,1,numPages)]:[]):Array.from({length:numPages},(_,i)=>i+1)).forEach(n=>{const h=dims[n-1],d=document.createElement('div');d.className='pg';d.dataset.p=n;d.style.cssText=`top:${y}px;height:${h}px`;d.innerHTML='<canvas></canvas><div class="ov"></div>';stage.appendChild(d);tops[n]=y;y+=h+G});
   H=Math.max(0,y-G);stage.style.width=W+'px';stage.style.height=H+'px'}
-async function loadPdf(buf,persist){
-  pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;numPages=pdf.numPages;pdfSize=buf.byteLength;dims=[];
-  for(let i=1;i<=numPages;i++){const v=(await pdf.getPage(i)).getViewport({scale:1});dims.push(W*v.height/v.width)}
-  if(persist)await Store.set('pdf',buf.slice(0));
-  $('#empty').hidden=true;page=1;buildStage();fitPage(1);drawOverlay();renderStatus();
-}
+/* Read one PDF into a doc entry (page heights are measured once here). */
+async function makeDoc(name,buf){
+  const doc=await pdfjsLib.getDocument({data:buf.slice(0)}).promise,dm=[];
+  for(let i=1;i<=doc.numPages;i++){const v=(await doc.getPage(i)).getViewport({scale:1});dm.push(W*v.height/v.width)}
+  return{name,buf,doc,n:doc.numPages,dims:dm}}
+/* Recompute the combined page list from docs. */
+function syncDocs(){
+  pdf=docs.length?true:null;numPages=docs.reduce((a,d)=>a+d.n,0);pdfSize=docs.reduce((a,d)=>a+d.buf.byteLength,0);
+  dims=docs.flatMap(d=>d.dims);pageMap=[];docs.forEach((d,i)=>{for(let p=1;p<=d.n;p++)pageMap.push([i,p])});
+  $('#empty').hidden=!!pdf;page=clamp(page,1,Math.max(1,numPages))}
+async function addPdfs(files){
+  const wasEmpty=!docs.length,first=numPages+1;let ok=0;const bad=[];
+  for(const f of files){try{docs.push(await makeDoc(f.name.replace(/\.pdf$/i,''),await f.arrayBuffer()));ok++}catch(e){bad.push(f.name)}}
+  if(!ok){toast('Could not read '+(bad.length>1?'those files':'that file'));return}
+  syncDocs();await saveDocs();buildStage();
+  if(wasEmpty){page=1;fitPage(1)}else await showPage(first,true);
+  drawOverlay();renderAll();
+  toast(ok+' PDF'+(ok>1?'s':'')+' added'+(bad.length?'; could not read '+bad.length:'')+(wasEmpty?'':' (starting at page '+first+')'))}
+/* Reorder / remove PDFs. `order` lists the old doc indexes in their new order; omitted ones are removed.
+ * Rooms and people are renumbered to follow their pages. Rooms on removed pages are deleted; people there are unplaced. */
+function applyOrder(order){
+  const starts=[];let s=0;docs.forEach(d=>{starts.push(s);s+=d.n});
+  const map={};let ng=0;order.forEach(oi=>{for(let p=1;p<=docs[oi].n;p++)map[starts[oi]+p]=++ng});
+  let lostR=0,lostP=0;
+  rooms=rooms.filter(r=>{const m=map[r.page];if(!m){lostR++;return false}r.page=m;return true});
+  people.forEach(p=>{const m=map[p.page];if(m)p.page=m;else{if(p.x!=null)lostP++;p.x=p.y=null;p.page=1}});
+  docs=order.map(i=>docs[i]);
+  hl=new Set([...hl].filter(k=>k[0]==='p'||rooms.some(r=>r.id===k.slice(2))));
+  if(sel&&!obj(sel))sel=null;
+  if(tool==='place'&&!people.some(p=>p.id===placeId)){tool=null;chain=false}
+  syncDocs();saveRooms();savePeople();saveDocs();buildStage();if(pdf)fitPage(page);
+  drawOverlay();renderAll();return[lostR,lostP]}
+async function restoreDocs(list){
+  for(const it of list){try{docs.push(await makeDoc(it.name||'Floor plan',it.buf))}catch(e){}}
+  syncDocs();page=1;buildStage();if(pdf)fitPage(1);drawOverlay();renderStatus()}
 function relayout(){if(!pdf)return;buildStage();fitPage(page);drawOverlay();renderStatus()}
 async function showPage(n,view){
   if(!pdf)return;n=clamp(n,1,numPages);const rb=S.view==='single'&&(n!==page||tops[n]===undefined);page=n;if(rb)buildStage();
   if(typeof view==='function')view();else if(view)fitPage(n);else apply();drawOverlay();renderStatus();
 }
 /* Pages render lazily: only those near the viewport are drawn; distant ones are released to save memory. */
-let rvT;function renderVisible(){clearTimeout(rvT);rvT=setTimeout(doRender,60)}
+let dcT=0;let rvT;function renderVisible(){clearTimeout(rvT);rvT=setTimeout(doRender,60)}
 function doRender(){if(!pdf)return;const vh=vsize()[1],y0=-ty/z,y1=(vh-ty)/z,m=vh/z;
   stage.querySelectorAll('.pg').forEach(d=>{const n=+d.dataset.p,t=pTop(n),b=t+dims[n-1];
     if(b>y0-m&&t<y1+m)drawPg(d,n);else if((b<y0-3*m||t>y1+3*m)&&d._done)freePg(d)})}
-async function drawPg(d,n){if(d._done)return;d._done=1;const p=await pdf.getPage(n),v1=p.getViewport({scale:1}),c=d.firstChild;
+async function drawPg(d,n){if(d._done)return;d._done=1;const pm=pageMap[n-1];if(!pm)return;const p=await docs[pm[0]].doc.getPage(pm[1]),v1=p.getViewport({scale:1}),c=d.firstChild;
   let ratio=Math.min(3,Math.max(2,devicePixelRatio||1));while(W*ratio*dims[n-1]*ratio>16e6&&ratio>1)ratio-=.25;
   const vp=p.getViewport({scale:W/v1.width*ratio});if(!d.isConnected)return;c.width=Math.round(vp.width);c.height=Math.round(vp.height);
   d._t=p.render({canvasContext:c.getContext('2d'),viewport:vp});try{await d._t.promise}catch(e){}}
@@ -292,7 +333,7 @@ function freePg(d){try{d._t&&d._t.cancel()}catch(e){}d.firstChild.width=1;d.firs
 const vsize=()=>[viewer.clientWidth,viewer.clientHeight];
 const fitZ=n=>{const[vw,vh]=vsize();return Math.min(vw/W,vh/(dims[(n||page)-1]||H))*.96};
 function updCur(){if(S.view==='single'||!numPages)return;const c=(vsize()[1]/2-ty)/z;let b=1;for(let n=1;n<=numPages;n++)if(tops[n]<=c)b=n;if(b!==page){page=b;renderStatus()}}
-function apply(){updCur();stage.style.transform=`translate(${tx}px,${ty}px) scale(${z})`;stage.style.setProperty('--iz',1/z);$('#sZ').textContent=Math.round(z/fitZ()*100)+'%';lastV=vsize();renderVisible()}
+function apply(){updCur();stage.style.transform=`translate(${tx}px,${ty}px) scale(${z})`;stage.style.setProperty('--iz',1/z);$('#sZ').textContent=Math.round(z/fitZ()*100)+'%';lastV=vsize();renderVisible();declutter()}
 function fitPage(n){const[vw,vh]=vsize(),h=dims[n-1]||H;z=Math.min(vw/W,vh/h)*.96;tx=(vw-W*z)/2;ty=(vh-h*z)/2-pTop(n)*z;apply()}
 function fitView(){fitPage(page)}
 function zoomAt(f,cx,cy){const nz=clamp(z*f,fitZ()*.2,8);tx=cx-(cx-tx)*nz/z;ty=cy-(cy-ty)*nz/z;z=nz;apply()}
@@ -314,7 +355,27 @@ function drawOverlay(){
     if(!S.people&&!S.namePeople&&!h1&&!s1&&mode!=='people')continue;
     add(p.page,`<div class="pin${h1?' hl':''}${s1?' sel':''}" data-id="${esc(p.id)}" style="left:${pc(p.x)};top:${pc(p.y)}" title="${esc(p.name)}"><b>${esc(initials(p.name))}</b>${h1||s1||S.namePeople?`<span>${esc(p.name)}</span>`:''}</div>`)}
   if(draft)add(draft.p,`<div id="draft" style="left:${pc(draft.x)};top:${pc(draft.y)};width:${pc(draft.w)};height:${pc(draft.h)}"></div>`);
-  stage.querySelectorAll('.pg').forEach(d=>d.querySelector('.ov').innerHTML=by[d.dataset.p]||'')
+  stage.querySelectorAll('.pg').forEach(d=>d.querySelector('.ov').innerHTML=by[d.dataset.p]||'');
+  declutter()
+}
+/* Label de-clash: labels keep a constant on-screen size, so overlaps depend on zoom. After each redraw or zoom, every visible
+ * label is tried at its default spot, then nudged up/down/sideways in screen pixels until it clears the labels already placed
+ * (highlighted and selected items are placed first, so they keep their natural position) and the people markers. */
+function declutter(){if(dcT)return;dcT=requestAnimationFrame(()=>{dcT=0;doDeclutter()})}
+function doDeclutter(){
+  const L=[...stage.querySelectorAll('.room>span,.pin>span')];if(!L.length)return;
+  L.forEach(s=>{s.style.setProperty('--dx',0);s.style.setProperty('--dy',0)});
+  const vr=viewer.getBoundingClientRect(),vis=r=>r.right>vr.left&&r.left<vr.right&&r.bottom>vr.top&&r.top<vr.bottom;
+  const items=L.map(s=>{const c=s.parentElement.classList;return{s,r:s.getBoundingClientRect(),pri:c.contains('hl')||c.contains('sel')?0:1}}).filter(o=>vis(o.r));
+  items.sort((a,b)=>a.pri-b.pri);
+  const pad=3,hit=(a,b)=>a.left<b.right+pad&&a.right>b.left-pad&&a.top<b.bottom+pad&&a.bottom>b.top-pad;
+  const placed=[...stage.querySelectorAll('.pin')].map(p=>p.getBoundingClientRect());
+  for(const it of items){
+    const w=it.r.width,h=it.r.height,c=[[0,0]];
+    for(let k=1;k<=3;k++){const vs=k*(h+2),hs=k*(w/2+6);c.push([0,-vs],[0,vs],[hs,0],[-hs,0],[hs,-vs],[-hs,-vs],[hs,vs],[-hs,vs])}
+    let pick=c.find(([dx,dy])=>{const r={left:it.r.left+dx,right:it.r.right+dx,top:it.r.top+dy,bottom:it.r.bottom+dy};return!placed.some(p=>hit(r,p))})||[0,0];
+    placed.push({left:it.r.left+pick[0],right:it.r.right+pick[0],top:it.r.top+pick[1],bottom:it.r.bottom+pick[1]});
+    it.s.style.setProperty('--dx',pick[0]);it.s.style.setProperty('--dy',pick[1])}
 }
 
 /* ---------- Pointer interaction: pan, pinch, draw, move, resize, place, drag pins ---------- */
@@ -393,13 +454,17 @@ const MODES=[['find','pin','Browse'],['rooms','room','Rooms'],['people','people'
 function setMode(m){mode=m;pOpen=true;if(tool){tool=null;chain=false}if(sel&&((m==='rooms'&&sel.k==='person')||(m==='people'&&sel.k==='room')))sel=null}
 function renderRail(){$('#rail').innerHTML=`<div class="rin"><div class="rlab">Workspace</div><div class="mr f">`+MODES.map(m=>`<button class="mode-btn" data-m="${m[0]}" title="${m[2]}" aria-label="${m[2]}" aria-current="${mode===m[0]}">${ic(m[1],20)}<span class="mode-label">${m[2]}</span></button>`).join('')+`</div><div class="mr"><button class="mode-btn" data-pin="1" title="Keep the menu expanded" aria-label="Pin menu" aria-pressed="${!!S.railPin}">${ic('tack',20)}<span class="mode-label">${S.railPin?'Unpin menu':'Pin menu'}</span></button></div></div>`}
 $('#rail').onclick=e=>{if(e.target.closest('[data-pin]')){S.railPin=!S.railPin;saveS();layout();renderRail();return}const b=e.target.closest('[data-m]');if(!b)return;if(mode===b.dataset.m)pOpen=!pOpen;else setMode(b.dataset.m);if(narrow())iOpen=false;layout();renderAll()};
+function docList(){let s=0;if(!docs.length)return '';
+  return `<div class="gh">PDFs · ${docs.length}</div>`+docs.map((d,i)=>{const a=s+1;s+=d.n;
+    return `<div class="doc"><div style="min-width:0"><b title="${esc(d.name)}">${esc(d.name)}</b><small>${a===s?'Page '+a:'Pages '+a+'–'+s}</small></div><div class="chips"><button class="btn ghost ib" data-a="docUp" data-i="${i}" aria-label="Move earlier" title="Move earlier"${i?'':' disabled'}>${ic('up',16)}</button><button class="btn ghost ib" data-a="docDown" data-i="${i}" aria-label="Move later" title="Move later"${i<docs.length-1?'':' disabled'}>${ic('down',16)}</button><span class="sp"></span><button class="btn dng" data-a="docDel" data-i="${i}">Remove</button></div></div>`}).join('')+
+    `<p class="hint">Pages are numbered continuously across the PDFs in this order. Moving a PDF keeps its rooms and people with it. Removing one deletes the rooms on its pages and unplaces the people there.</p>`}
 function renderPanel(){
   const el=$('#panel');let h='';
   if(mode==='find')h=`<div class="ph"><h2>Browse</h2><p>Everything on the plans. Use search (Ctrl K) to jump straight to one.</p></div><div class="pb"><div id="plist"></div></div>`;
   else if(mode==='rooms')h=`<div class="ph"><h2>Rooms</h2><p>Mark each meeting room as a rectangle on the floor plan.</p></div><div class="pb"><button class="btn pri" data-a="addRoom">${ic('plus')} ${tool==='draw'?'Drag a rectangle on the plan…':'Add room'}</button><div id="plist"></div></div>`;
   else if(mode==='people')h=`<div class="ph"><h2>People</h2><p>Press Add person, then click the plan where they sit.</p></div><div class="pb"><button class="btn pri" data-a="addPerson">${ic('plus')} ${tool==='person'?'Click the plan…':'Add person'}</button><div class="chips"><button class="btn" data-a="bulk">Add several…</button><button class="btn" data-a="placeNext">Place next unplaced</button></div><p class="hint" id="pcount"></p><div id="plist"></div></div>`;
-  else h=`<div class="ph"><h2>Data</h2><p>Floor plan, import and export. Everything is stored on this device.</p></div><div class="pb"><label class="btn pri">Load floor plan PDF</label><div class="chips"><button class="btn" data-a="imp">Import…</button><button class="btn" data-a="exp">Export…</button></div><dl class="kv"><dt>PDF</dt><dd>${pdf?numPages+' pages · '+(pdfSize/1048576).toFixed(1)+' MB':'None loaded'}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length} (${people.filter(p=>p.x!=null).length} placed)</dd></dl><p class="hint">Use Export regularly to keep a backup of your rooms and people.</p></div>`;
-  el.innerHTML=h;if(mode==='data')el.querySelector('label.btn').htmlFor='pdfIn';renderList();
+  else h=`<div class="ph"><h2>Data</h2><p>Floor plans, import and export. Everything is stored on this device.</p></div><div class="pb"><label class="btn pri" for="pdfIn">${ic('plus')} ${pdf?'Add more floor plan PDFs':'Load floor plan PDFs'}</label>${docList()}<div class="chips"><button class="btn" data-a="imp">Import…</button><button class="btn" data-a="exp">Export…</button></div><dl class="kv"><dt>PDFs</dt><dd>${pdfInfo()}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length} (${people.filter(p=>p.x!=null).length} placed)</dd></dl><p class="hint">Use Export regularly to keep a backup of your rooms and people. PDFs themselves are not included in the export.</p></div>`;
+  el.innerHTML=h;renderList();
 }
 const roomRow=r=>`<div class="row${isSel('room',r.id)?' act':''}" tabindex="0" role="button" data-k="room" data-id="${esc(r.id)}"><span class="ri">${ic('room')}</span><span class="rt"><b>${esc(r.name)}</b><small>${esc((r.notes||'').split('\n')[0]||'Room')}</small></span></div>`;
 const personRow=p=>`<div class="row${isSel('person',p.id)?' act':''}" tabindex="0" role="button" data-k="person" data-id="${esc(p.id)}"><span class="ri">${ic('user')}</span><span class="rt"><b>${esc(p.name)}</b><small>${esc([p.role,p.team].filter(Boolean).join(' · ')||p.id)}</small></span>${p.x==null?'<span class="tag w">Not placed</span>':''}</div>`;
@@ -411,10 +476,12 @@ function renderList(){const el=$('#plist');if(!el)return;let h='';
   el.innerHTML=h}
 $('#panel').addEventListener('click',e=>{
   const row=e.target.closest('.row[data-k]');if(row){select(row.dataset.k,row.dataset.id,true);return}
-  const a=e.target.closest('[data-a]')?.dataset.a;if(!a)return;
+  const be=e.target.closest('[data-a]'),a=be?.dataset.a;if(!a)return;
   if(a==='addRoom'){if(!pdf){toast('Load a floor plan PDF first');return}tool=tool==='draw'?null:'draw';if(narrow()){pOpen=false;layout()}renderAll()}
   else if(a==='addPerson'){if(!pdf){toast('Load a floor plan PDF first');return}tool=tool==='person'?null:'person';chain=false;if(narrow()){pOpen=false;layout()}renderAll()}
   else if(a==='bulk')openIo('bulk');else if(a==='imp')openIo('imp');else if(a==='exp')openIo('exp');
+  else if(a==='docUp'||a==='docDown'){const i=+be.dataset.i,j=a==='docUp'?i-1:i+1;if(j<0||j>=docs.length)return;const o=docs.map((_,k)=>k);[o[i],o[j]]=[o[j],o[i]];applyOrder(o);toast('PDFs reordered; pages renumbered')}
+  else if(a==='docDel'){const i=+be.dataset.i;arm(be,()=>{const[lr,lp]=applyOrder(docs.map((_,k)=>k).filter(k=>k!==i));toast('PDF removed'+(lr||lp?' ('+lr+' room'+(lr===1?'':'s')+' deleted, '+lp+' '+(lp===1?'person':'people')+' unplaced)':''))})}
   else if(a==='placeNext'){const p=people.find(x=>x.x==null);if(!p){toast('Everyone is placed');return}if(!pdf){toast('Load a floor plan PDF first');return}chain=true;placeId=p.id;tool='place';select('person',p.id,false);toast('Click where '+p.name+' sits (Esc to stop)')}
 });
 $('#panel').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('row'))e.target.click()});
@@ -422,14 +489,15 @@ $('#panel').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classLis
 /* ---------- Inspector ---------- */
 const fld=(l,f,v,t='text',c='')=>`<label class="fld ${c}">${l}<input data-f="${f}" type="${t}" value="${esc(v)}"${t==='number'?' min="1"':''}></label>`;
 const kv=(l,v)=>v||v===0?`<dt>${l}</dt><dd>${esc(v)}</dd>`:'';
+const pgLbl=o=>{const d=docOf(o.page);return 'Page '+o.page+(d&&docs.length>1?' ('+d.name+')':'')};
 function renderInsp(){
   const el=$('#insp'),o=obj(sel);let h=`<div class="ph"><div style="display:flex;justify-content:space-between;align-items:center"><h2>${o?(sel.k==='room'?'Room':'Person'):'Details'}</h2><button class="btn ghost ib" data-a="close" aria-label="Close details">${ic('x')}</button></div>`;
-  if(!o)h+=`<p>Select a room or person to see its details.</p></div><div class="pb"><dl class="kv">${kv('Rooms',rooms.length)}${kv('People',people.length)}${kv('Pages',numPages||'–')}</dl></div>`;
+  if(!o)h+=`<p>Select a room or person to see its details.</p></div><div class="pb"><dl class="kv">${kv('Rooms',rooms.length)}${kv('People',people.length)}${kv('Pages',numPages||'–')}${kv('PDFs',docs.length||'–')}</dl></div>`;
   else if(!isEd()){
-    h+=`<p>${esc(o.name)}</p></div><div class="pb"><dl class="kv">`+(sel.k==='room'?kv('Notes',o.notes):kv('Role',o.role)+kv('Team',o.team)+kv('Contact',o.contact)+kv('Seat',o.x==null?'Not placed yet':'Page '+o.page))+`</dl><button class="btn pri" data-a="show">${ic('pin')} Show on map</button></div>`}
-  else if(sel.k==='room')h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}<label class="fld w">Notes<textarea data-f="notes" rows="6">${esc(o.notes||'')}</textarea></label></div><div class="err" id="ierr" role="alert"></div><p class="hint">Drag the box to move it; drag a corner dot to resize.</p><div class="chips"><button class="btn" data-a="show">Locate</button><button class="btn dng" data-a="del">Delete</button></div></div>`;
+    h+=`<p>${esc(o.name)}</p></div><div class="pb"><dl class="kv">`+(sel.k==='room'?kv('Notes',o.notes)+kv('Location',pgLbl(o)):kv('Role',o.role)+kv('Team',o.team)+kv('Contact',o.contact)+kv('Seat',o.x==null?'Not placed yet':pgLbl(o)))+`</dl><button class="btn pri" data-a="show">${ic('pin')} Show on map</button></div>`}
+  else if(sel.k==='room')h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}<label class="fld w">Notes<textarea data-f="notes" rows="6">${esc(o.notes||'')}</textarea></label></div><div class="err" id="ierr" role="alert"></div><p class="hint">${esc(pgLbl(o))}. Drag the box to move it; drag a corner dot to resize.</p><div class="chips"><button class="btn" data-a="show">Locate</button><button class="btn dng" data-a="del">Delete</button></div></div>`;
   else h+=`<p>Changes save automatically.</p></div><div class="pb"><div class="g2">${fld('Name','name',o.name,'text','w')}${fld('Role','role',o.role)}${fld('Team','team',o.team)}${fld('Contact','contact',o.contact,'text','w')}${fld('ID','id',o.id)}${fld('Page','page',o.page,'number')}</div><div class="err" id="ierr" role="alert"></div>
-   <div class="gh">Seat on the plan</div><p class="hint">${o.x==null?'Not placed yet.':'Placed on page '+o.page+'. Drag the marker to adjust.'}</p>
+   <div class="gh">Seat on the plan</div><p class="hint">${o.x==null?'Not placed yet.':'Placed on '+esc(pgLbl(o).toLowerCase())+'. Drag the marker to adjust.'}</p>
    <button class="btn pri" data-a="place">${ic('pin')} ${o.x==null?'Place on map':'Move to a new spot'}</button><div class="chips">${o.x!=null?'<button class="btn" data-a="show">Locate</button><button class="btn" data-a="unplace">Unplace</button>':''}<button class="btn dng" data-a="del">Delete</button></div></div>`;
   el.innerHTML=h;
 }
@@ -455,13 +523,14 @@ function renderStatus(){
   $('#sMode').textContent={find:'Browse',rooms:'Rooms',people:'People',data:'Data'}[mode];
   const o=obj(sel),t=tool==='draw'?'Drag a rectangle on the plan to mark a room':tool==='person'?'Click the plan where the new person sits (Esc cancels)':tool==='place'?'Click the plan to place '+(people.find(p=>p.id===placeId)?.name||'person')+' (Esc cancels)':'';
   $('#sSel').textContent=t||(o?o.name:'No selection');
+  const d=pdf&&docs.length>1?docOf(page):null;$('#sDoc').textContent=d?d.name:'';$('#sDoc').title=d?d.name:'';
   $('#sPg').textContent=pdf?page+' / '+numPages:'–';viewer.classList.toggle('draw',!!tool);
   $('#sPrev').disabled=!pdf||page<=1;$('#sNext').disabled=!pdf||page>=numPages;
 }
 function renderAll(){layout();renderRail();renderPanel();renderInsp();drawOverlay();renderStatus()}
 
 /* ---------- Menus ---------- */
-const MENUS={File:[['Load floor plan PDF…','',()=>$('#pdfIn').click()],['Import data…','',()=>openIo('imp')],['Export data…','',()=>openIo('exp')]],
+const MENUS={File:[['Load floor plan PDFs…','',()=>$('#pdfIn').click()],['Import data…','',()=>openIo('imp')],['Export data…','',()=>openIo('exp')]],
  View:[['Fit to screen','',fitView],['Back to page 1','',home],['Show or hide side panel','',()=>{pOpen=!pOpen;layout()}],['Show people on map','',()=>{S.people=!S.people;saveS();drawOverlay()}],['Settings…','Ctrl ,',()=>openSet()]]};
 MENUS.Tools=MODES.map(m=>[m[2],'',()=>{setMode(m[0]);layout();renderAll()}]);MENUS.Help=[['Shortcuts and about','',()=>openSet('about')]];
 let menuItems=[];
@@ -469,7 +538,7 @@ function closeMenu(){$('#menu').hidden=true}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-menu]');
   if(b){const m=$('#menu'),r=b.getBoundingClientRect();menuItems=MENUS[b.dataset.menu];m.innerHTML=menuItems.map((x,i)=>`<button role="menuitem" data-i="${i}"><span>${x[0]}</span>${x[1]?`<kbd>${x[1]}</kbd>`:''}</button>`).join('');m.hidden=false;m.style.left=Math.min(r.left,innerWidth-m.offsetWidth-8)+'px';m.style.top=r.bottom+4+'px';m.querySelector('button').focus();return}
   const i=e.target.closest('#menu [data-i]');if(i){closeMenu();menuItems[+i.dataset.i][2]();return}if(!e.target.closest('#menu'))closeMenu()});
-$('#pdfIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await loadPdf(await f.arrayBuffer(),true);toast('Floor plan loaded');renderAll()}catch(err){toast('Could not read that PDF')}e.target.value=''};
+$('#pdfIn').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;toast('Reading '+fs.length+' PDF'+(fs.length>1?'s':'')+'…');try{await addPdfs(fs)}catch(err){toast('Could not read that PDF')}};
 $('#emptyBtn').htmlFor='pdfIn';
 
 /* ---------- Command palette (global search) ---------- */
@@ -532,10 +601,10 @@ function renderSet(){
       const f=(l,k)=>`<label class="fld">${l}<input type="color" data-cb="${k}" value="${cb[k]}"></label>`;
       return `<div class="g2"><label class="fld w">Name<input data-cb="n" value="${esc(cb.n)}"></label></div><div class="sw">${f('Background','bg')}${f('Surface','s1')}${f('Border','bd')}${f('Text','tx')}${f('Accent','ac')}</div><div id="cbp"></div><div class="err" id="cbw"></div><div class="chips"><button class="btn pri" data-act="saveCustom">Save as new theme</button></div>`+
         (cu.length?`<div class="gh">Your themes</div>`+cu.map(c=>`<div class="srow"><span>${esc(c.n)}</span><button class="btn dng" data-act="delCustom" data-id="${c.id}">Delete</button></div>`).join(''):'')})()}
-  else if(setCat==='plan')h=`<h3>Floor plan</h3><p class="hint">How pages are shown, and where the view goes when you open a room or person.</p>`+srow('Page layout','Stacked pages scroll as one long plan.',seg('view',[['stack','Stacked vertically'],['single','One page at a time']]))+srow('Zoom when jumping to a room or person','Applies when you pick a search result or click an item in a list.',seg('fz',[['fit','Fit the item'],['fixed','Fixed zoom']]))+(S.fz==='fixed'?srow('Zoom level','Percent of the “fit page” zoom shown in the status bar.',`<div style="display:flex;gap:10px;align-items:center;width:240px"><input type="range" min="100" max="800" step="25" value="${S.fzv}" data-range="fzv" aria-label="Zoom level"><span id="fzl">${S.fzv}%</span></div>`):'');
+  else if(setCat==='plan')h=`<h3>Floor plan</h3><p class="hint">How pages are shown, and where the view goes when you open a room or person. Several PDFs are shown as one continuous run of pages.</p>`+srow('Page layout','Stacked pages scroll as one long plan.',seg('view',[['stack','Stacked vertically'],['single','One page at a time']]))+srow('Zoom when jumping to a room or person','Applies when you pick a search result or click an item in a list.',seg('fz',[['fit','Fit the item'],['fixed','Fixed zoom']]))+(S.fz==='fixed'?srow('Zoom level','Percent of the “fit page” zoom shown in the status bar.',`<div style="display:flex;gap:10px;align-items:center;width:240px"><input type="range" min="100" max="800" step="25" value="${S.fzv}" data-range="fzv" aria-label="Zoom level"><span id="fzl">${S.fzv}%</span></div>`):'');
   else if(setCat==='search')h=`<h3>Search & map</h3><p class="hint">Control what global search (Ctrl K) covers and what the plan shows.</p>`+tog('people','Show people on the map','Display seat markers for everyone who has been placed.')+tog('nameRooms','Always show room names','Outline every room on the plan with its name, not just search results.')+tog('namePeople','Always show people’s names','Keep every person’s name visible beside their marker.')+tog('sr','Search rooms','Include rooms in global search.')+tog('sp','Search people','Include people in global search.')+srow('Recent searches',S.recent.length+' saved on this device','<button class="btn" data-act="clearRecent">Clear</button>');
-  else if(setCat==='data')h=`<h3>Data & storage</h3><p class="hint">Rooms, people and the PDF are stored in this browser only.</p><dl class="kv"><dt>PDF</dt><dd>${pdf?numPages+' pages · '+(pdfSize/1048576).toFixed(1)+' MB':'None'}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length}</dd></dl><div class="chips"><button class="btn" data-act="exp">Export…</button><button class="btn" data-act="imp">Import…</button></div><div class="gh">Danger zone</div>`+srow('Delete all rooms and people','Cannot be undone. Export first.','<button class="btn dng" data-act="wipe">Delete</button>')+srow('Reset settings','Restore the default theme and preferences.','<button class="btn dng" data-act="resetS">Reset</button>');
-  else h=`<h3>About & shortcuts</h3><p class="hint">Andrew’s Lost · version 2. Page numbers are 1-based; positions are stored as 0–1 fractions of each page.</p><dl class="kv"><dt><kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>/</kbd></dt><dd>Open search</dd><dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt><dd>Move and open a result</dd><dt><kbd>Shift</kbd> <kbd>Enter</kbd></dt><dd>Highlight every result</dd><dt><kbd>Ctrl</kbd> <kbd>,</kbd></dt><dd>Settings</dd><dt><kbd>Esc</kbd></dt><dd>Close search or cancel placing/drawing</dd></dl>`;
+  else if(setCat==='data')h=`<h3>Data & storage</h3><p class="hint">Rooms, people and the PDFs are stored in this browser only. Add, reorder or remove PDFs from Data in the left menu.</p><dl class="kv"><dt>PDFs</dt><dd>${pdfInfo()}</dd><dt>Rooms</dt><dd>${rooms.length}</dd><dt>People</dt><dd>${people.length}</dd></dl><div class="chips"><button class="btn" data-act="exp">Export…</button><button class="btn" data-act="imp">Import…</button></div><div class="gh">Danger zone</div>`+srow('Delete all rooms and people','Cannot be undone. Export first.','<button class="btn dng" data-act="wipe">Delete</button>')+srow('Reset settings','Restore the default theme and preferences.','<button class="btn dng" data-act="resetS">Reset</button>');
+  else h=`<h3>About & shortcuts</h3><p class="hint">Andrew’s Lost · version 3. Page numbers are 1-based and continuous across all loaded PDFs; positions are stored as 0–1 fractions of each page.</p><dl class="kv"><dt><kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>/</kbd></dt><dd>Open search</dd><dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt><dd>Move and open a result</dd><dt><kbd>Shift</kbd> <kbd>Enter</kbd></dt><dd>Highlight every result</dd><dt><kbd>Ctrl</kbd> <kbd>,</kbd></dt><dd>Settings</dd><dt><kbd>Esc</kbd></dt><dd>Close search or cancel placing/drawing</dd></dl>`;
   sc.innerHTML=h;sc.scrollTop=top;if(setCat==='appearance'){fillGal();cbPrev()}
 }
 function fillGal(){const d=isDark(),q=tq.toLowerCase(),L=allTh().filter(t=>(tf==='All'||t.f===tf)&&(!q||t.n.toLowerCase().includes(q)));
@@ -583,10 +652,10 @@ function doImport(text){let rl=[],pl=[];text=text.trim();
   let a=0,bad=0;
   for(const o of rl){const r=normRoom(o);if(!r){bad++;continue}if(!r.id)r.id=nextId(rooms,'MR');const i=rooms.findIndex(x=>x.id===r.id);i>=0?rooms[i]=r:rooms.push(r);a++}
   for(const o of pl){const p=normPerson(o);if(!p){bad++;continue}if(!p.id)p.id=nextId(people,'P');const i=people.findIndex(x=>x.id===p.id);i>=0?people[i]=p:people.push(p);a++}
-  saveRooms();savePeople();renderAll();return `Imported ${a} item(s)`+(bad?`, skipped ${bad} invalid`:'')+'. Items with matching IDs were replaced.'}
+  saveRooms();savePeople();renderAll();return `Imported ${a} item(s)`+(bad?`, skipped ${bad} invalid`:'')+'. Items with matching IDs were replaced. Page numbers refer to the combined page order of the loaded PDFs.'}
 function openIo(m){ioMode=m;$('#ioMsg').textContent='';const T={exp:'Export configuration (JSON)',imp:'Import rooms and people (JSON or CSV)',bulk:'Add several people'}[m];$('#ioT').textContent=T;
   $('#ioGo').textContent={exp:'Download',imp:'Import',bulk:'Add people'}[m];$('#ioCp').hidden=m!=='exp';$('#ioFL').hidden=m==='exp';
-  $('#ioTa').value=m==='exp'?JSON.stringify({version:2,pageNumbering:'1-based',rooms,people},null,2):'';
+  $('#ioTa').value=m==='exp'?JSON.stringify({version:3,pageNumbering:'1-based, continuous across the PDFs in the order listed under documents',documents:docs.map(d=>({name:d.name,pages:d.n})),rooms,people},null,2):'';
   $('#ioTa').placeholder=m==='imp'?'Paste JSON, or CSV. Rooms: id,name,page,x,y,width,height,notes. People: id,name,role,team,contact,page,x,y':m==='bulk'?'One person per line:\nName, Role, Team\nJane Citizen, Engineer, Network':'';
   if(!$('#io').open)$('#io').showModal()}
 $('#ioX').onclick=()=>$('#io').close();
@@ -610,7 +679,11 @@ addEventListener('keydown',e=>{
 (async()=>{
   await Store.open();rooms=(await Store.get('rooms'))||[];people=(await Store.get('people'))||[];
   pOpen=!narrow();layout();renderAll();
-  const buf=await Store.get('pdf');if(buf){try{await loadPdf(buf,false)}catch(e){}}renderAll();
+  let list=await Store.get('pdfs');
+  if(!list||!list.length){const old=await Store.get('pdf');list=old?[{name:'Floor plan',buf:old}]:[];const migrate=!!old;
+    await restoreDocs(list);if(migrate&&docs.length)await saveDocs()}
+  else await restoreDocs(list);
+  renderAll();
 })();
 </script>
 </body>
