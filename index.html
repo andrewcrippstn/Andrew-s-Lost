@@ -85,6 +85,8 @@ input[type=color]{padding:2px;height:34px;width:48px}input[type=checkbox]{width:
 .room.nm{border:calc(2px*var(--iz)) solid var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 .room.sel{border-style:solid;border-color:var(--hl);background:color-mix(in srgb,var(--hl) 30%,transparent)}
 .room span{position:absolute;left:0;bottom:100%;white-space:nowrap;background:#1d2330;color:#fff;font-size:calc(13px*var(--iz));padding:calc(2px*var(--iz)) calc(7px*var(--iz));border-radius:calc(4px*var(--iz));font-weight:600}
+#leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+#leaders line{stroke:#1d2330;stroke-width:1.5;stroke-linecap:round}#leaders circle{fill:#1d2330;stroke:#fff;stroke-width:1}
 .room span,.pin span{translate:calc(var(--dx,0)*var(--iz)*1px) calc(var(--dy,0)*var(--iz)*1px)}
 .hd{position:absolute;width:calc(14px*var(--iz));height:calc(14px*var(--iz));background:var(--hl);border:calc(2px*var(--iz)) solid #fff;border-radius:50%;pointer-events:auto}
 .hd[data-h=nw]{left:calc(-7px*var(--iz));top:calc(-7px*var(--iz));cursor:nwse-resize}.hd[data-h=ne]{right:calc(-7px*var(--iz));top:calc(-7px*var(--iz));cursor:nesw-resize}
@@ -152,7 +154,7 @@ dialog[open]{display:flex;flex-direction:column}
 <nav id="rail" aria-label="Modes"></nav>
 <aside id="panel" aria-label="Tools"></aside>
 <main id="ws">
-  <div id="viewer"><div id="stage"></div></div>
+  <div id="viewer"><div id="stage"></div><svg id="leaders" aria-hidden="true"></svg></div>
   <div id="empty"><b>No floor plans loaded</b><span>Load one or more PDFs of your office floor plans.</span><label class="btn pri" id="emptyBtn">Load floor plan PDFs</label></div>
 </main>
 <aside id="insp" aria-label="Details"></aside>
@@ -363,19 +365,30 @@ function drawOverlay(){
  * (highlighted and selected items are placed first, so they keep their natural position) and the people markers. */
 function declutter(){if(dcT)return;dcT=requestAnimationFrame(()=>{dcT=0;doDeclutter()})}
 function doDeclutter(){
+  const lines=$('#leaders');lines.innerHTML='';
   const L=[...stage.querySelectorAll('.room>span,.pin>span')];if(!L.length)return;
   L.forEach(s=>{s.style.setProperty('--dx',0);s.style.setProperty('--dy',0)});
   const vr=viewer.getBoundingClientRect(),vis=r=>r.right>vr.left&&r.left<vr.right&&r.bottom>vr.top&&r.top<vr.bottom;
-  const items=L.map(s=>{const c=s.parentElement.classList;return{s,r:s.getBoundingClientRect(),pri:c.contains('hl')||c.contains('sel')?0:1}}).filter(o=>vis(o.r));
+  const items=L.map(s=>{const c=s.parentElement.classList;return{s,r:s.getBoundingClientRect(),pr:s.parentElement.getBoundingClientRect(),pin:c.contains('pin'),pri:c.contains('hl')||c.contains('sel')?0:1}}).filter(o=>vis(o.r));
   items.sort((a,b)=>a.pri-b.pri);
-  const pad=3,hit=(a,b)=>a.left<b.right+pad&&a.right>b.left-pad&&a.top<b.bottom+pad&&a.bottom>b.top-pad;
+  const pad=1,hit=(a,b)=>a.left<b.right+pad&&a.right>b.left-pad&&a.top<b.bottom+pad&&a.bottom>b.top-pad;
   const placed=[...stage.querySelectorAll('.pin')].map(p=>p.getBoundingClientRect());
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));let svg='';
   for(const it of items){
-    const w=it.r.width,h=it.r.height,c=[[0,0]];
+    const w=it.r.width,h=it.r.height,gap=it.pin?4:0,below=it.pr.bottom+gap-it.r.top;
+    /* order: normal spot above, then underneath the room/marker, then nudges up/down/sideways */
+    const c=[[0,0],[0,below]];
     for(let k=1;k<=3;k++){const vs=k*(h+2),hs=k*(w/2+6);c.push([0,-vs],[0,vs],[hs,0],[-hs,0],[hs,-vs],[-hs,-vs],[hs,vs],[-hs,vs])}
-    let pick=c.find(([dx,dy])=>{const r={left:it.r.left+dx,right:it.r.right+dx,top:it.r.top+dy,bottom:it.r.bottom+dy};return!placed.some(p=>hit(r,p))})||[0,0];
-    placed.push({left:it.r.left+pick[0],right:it.r.right+pick[0],top:it.r.top+pick[1],bottom:it.r.bottom+pick[1]});
-    it.s.style.setProperty('--dx',pick[0]);it.s.style.setProperty('--dy',pick[1])}
+    const pick=c.find(([dx,dy])=>{const r={left:it.r.left+dx,right:it.r.right+dx,top:it.r.top+dy,bottom:it.r.bottom+dy};return!placed.some(p=>hit(r,p))})||[0,0];
+    const lr={left:it.r.left+pick[0],right:it.r.right+pick[0],top:it.r.top+pick[1],bottom:it.r.bottom+pick[1]};
+    placed.push(lr);it.s.style.setProperty('--dx',pick[0]);it.s.style.setProperty('--dy',pick[1]);
+    /* leader line when the moved label no longer touches its room/marker */
+    const t=2,pr=it.pr,touch=lr.left<pr.right+t&&lr.right>pr.left-t&&lr.top<pr.bottom+t&&lr.bottom>pr.top-t;
+    if(pick[0]||pick[1]){if(!touch){
+      const lcx=(lr.left+lr.right)/2,lcy=(lr.top+lr.bottom)/2,px=cl(lcx,pr.left,pr.right),py=cl(lcy,pr.top,pr.bottom),
+        qx=cl(px,lr.left,lr.right),qy=cl(py,lr.top,lr.bottom);
+      svg+=`<line x1="${qx-vr.left}" y1="${qy-vr.top}" x2="${px-vr.left}" y2="${py-vr.top}"/><circle cx="${px-vr.left}" cy="${py-vr.top}" r="2.5"/>`}}}
+  lines.innerHTML=svg;
 }
 
 /* ---------- Pointer interaction: pan, pinch, draw, move, resize, place, drag pins ---------- */
